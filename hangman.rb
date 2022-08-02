@@ -12,15 +12,9 @@
 # to_s method override 
 # use pry-byebug / binding.pry instead of just puts
 
-# to print out underscores + correct letters:
-# use map on the secret word
-# check if each letter is in your guess
-# if not, return an underscore
-# if so, return the letter
-# the array will be both underscores and letters
-
 # Add:
 # limit input to 1 character, raise exception
+# game over if out of guesses
 
 require 'pry-byebug'
 
@@ -78,7 +72,7 @@ class Hangman < WordGame
     loop do
       show_stats
       show_current_progress(@secret_word)
-      match_msg
+      puts_matches
       guess
       check_guess(@guess, @secret_word)
 
@@ -87,9 +81,18 @@ class Hangman < WordGame
         win_game
         break
       end
+
+      if @guesses == 10
+        game_over
+        return
+      end
     end
 
     next_game
+  end
+
+  def game_over
+    puts "\nYou are out of guesses! Game over!\n "
   end
 
   def next_game
@@ -99,17 +102,23 @@ class Hangman < WordGame
     play(@secret_word)
   end
 
-  def match_msg
+  def puts_matches
     if !@guess.nil?
-      tally = @secret_word.count { |letter| letter == @guess.join('') }
-      puts "There were #{tally} #{@guess.join}'s in the secret word!"
+      tally = @secret_word.count { |letter| letter == @guess }
+      puts "There were #{tally} #{@guess}'s in the secret word!".blue
     end
   end
 
   def guess
-    @guess = @human.input_guess.upcase.split('')
+    begin
+      @guess = @human.input_guess.upcase
+      raise 'Invalid input' unless @guess.match(/[a-zA-Z]/) && @guess.length == 1
+    rescue
+      puts 'Invalid input, please try again.'
+      retry
+    end
 
-    if !@secret_word.include?(@guess.join(''))
+    if !@secret_word.include?(@guess)
       @guesses += 1
       @incorrect_letters << @guess
     end
