@@ -1,0 +1,1 @@
+{:@load=>0, :@human=>#<Player:0x00007f448114f538>, :@computer=>#<Computer:0x00007f448114f448>, :@wins=>0, :@incorrect_letters=>[], :@guesses=>0, :@guess=>"SAVE", :@secret_word=>["C", "R", "A", "S", "H"], :@current_progress=>["_", "_", "_", "_", "_"]}

@@ -14,9 +14,16 @@
 
 # Add:
 # limit input to 1 character, raise exception
-# game over if out of guesses
+# save list of correctly guessed words (no repeat plays)
+# no game over, when you miss a word, add to losses
+# keep track of wins vs losses
+
+# first try to serialize/unserialize with yaml, json, msgpack
+# try to unserialize using your own method
+# look at all of your instance_variables
 
 require 'pry-byebug'
+require 'json'
 
 module Swimmable
   def swim
@@ -26,7 +33,28 @@ end
 
 module Serializable
   def serialize
-    puts 'We can serialize data with this method.'
+    obj = {}
+    instance_variables.map do |var|
+      obj[var] = instance_variable_get(var)
+    end
+
+    JSON.dump(obj)
+
+    Dir.mkdir('game_saves') unless Dir.exist?('game_saves')
+    fname = "game_saves/hangman_save.json"
+    File.open(fname, 'w') { |file| file.write(obj)}
+  end
+
+  def unserialize
+    fname = File.read('game_saves/hangman_save.json')
+
+    data = JSON.parse(fname)
+    # data = JSON.load(fname)
+
+    # obj = JSON.parse(file)
+    # obj.keys.each do |key|
+    #   instance_variable_set(key, obj[key])
+    # end
   end
 end
 
@@ -42,6 +70,17 @@ class Hangman < WordGame
 
   def initialize
     intro_description
+    ask_load_game
+    # @load = 1
+
+    if @load == 1
+      unserialize
+    else
+      new_game
+    end
+  end
+
+  def new_game
     @human = Player.new
     @computer = Computer.new
     @wins = 0
@@ -64,7 +103,7 @@ class Hangman < WordGame
   end
 
   def show_current_progress(word)
-    puts "The secret word is: #{@current_progress.join(' ')}"
+    puts "    The secret word is: #{@current_progress.join(' ')}"
     puts "\n"
   end
 
@@ -72,9 +111,14 @@ class Hangman < WordGame
     loop do
       show_stats
       show_current_progress(@secret_word)
-      puts_matches
+      msg_about_turn
       guess
-      check_guess(@guess, @secret_word)
+
+      if @guess == 'SAVE'
+        serialize
+      else
+        check_guess(@guess, @secret_word)
+      end
 
       if !@current_progress.include?('_')
         show_current_progress(@secret_word)
@@ -92,7 +136,8 @@ class Hangman < WordGame
   end
 
   def game_over
-    puts "\nYou are out of guesses! Game over!\n "
+    puts "\nYou are out of guesses! The secret word was \"#{@secret_word.join}\"!\n"\
+          "Game over!\n "
   end
 
   def next_game
@@ -102,23 +147,28 @@ class Hangman < WordGame
     play(@secret_word)
   end
 
-  def puts_matches
-    if !@guess.nil?
-      tally = @secret_word.count { |letter| letter == @guess }
-      puts "There were #{tally} #{@guess}'s in the secret word!".blue
+  def msg_about_turn
+    if @guess == 'SAVE'
+      puts 'Game is saving!!'.bg_red
+    else
+      if !@guess.nil?
+        tally = @secret_word.count { |letter| letter == @guess }
+        puts "There were #{tally} #{@guess}'s in the secret word!".blue
+      end
     end
   end
 
   def guess
     begin
       @guess = @human.input_guess.upcase
-      raise 'Invalid input' unless @guess.match(/[a-zA-Z]/) && @guess.length == 1
+
+      raise 'Invalid input' unless (@guess.match(/[a-zA-Z]/) && @guess.length == 1) || @guess =='SAVE'
     rescue
-      puts 'Invalid input, please try again.'
+      puts 'Invalid input, please try again.'.bg_red
       retry
     end
 
-    if !@secret_word.include?(@guess)
+    if !@secret_word.include?(@guess) && @guess != 'SAVE'
       @guesses += 1
       @incorrect_letters << @guess
     end
@@ -127,7 +177,6 @@ class Hangman < WordGame
   end
   
   def check_guess(guess, secret_word)
-    p secret_word if guess == ['1']
 
     secret_word.each_with_index do |letter, index|
       if guess.include?(letter)
@@ -138,15 +187,26 @@ class Hangman < WordGame
 
   def show_stats
     used_bank = @incorrect_letters.join(' ')
-    
-    puts "\nGuesses left: #{10 - @guesses}      #{"Incorrect letters:".red} #{used_bank.red} \n"\
-          "Wins in a row: #{@wins}\n "
+
+    puts "\n    Wins in a row: #{@wins}".gray
+    puts "    Guesses left: #{10 - @guesses}      #{"Incorrect letters:".red} #{used_bank.red} \n "\
+
   end
 
   def intro_description
     puts "\nIntro to Hangman goes here!\n"\
     "This is another line for the intro!\n"\
     "\n"\
+  end
+
+  def ask_load_game
+    puts 'Would you like to load your saved game?'
+    input = gets.chomp
+    if input == 'y'
+      @load = 1
+    else
+      @load = 0
+    end
   end
 
   def win_game
@@ -205,3 +265,5 @@ class String
 end
 
 game = Hangman.new
+
+exit
