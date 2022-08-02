@@ -13,6 +13,7 @@
 # use pry-byebug / binding.pry instead of just puts
 
 # Add:
+# add instruction to type 'save', 'load', 'quit' 
 # limit input to 1 character, raise exception
 # save list of correctly guessed words (no repeat plays)
 # no game over, when you miss a word, add to losses
@@ -38,18 +39,25 @@ module Serializable
       obj[var] = instance_variable_get(var)
     end
 
-    JSON.dump(obj)
+    json_str = JSON.dump(obj)
 
     Dir.mkdir('game_saves') unless Dir.exist?('game_saves')
     fname = "game_saves/hangman_save.json"
-    File.open(fname, 'w') { |file| file.write(obj)}
+    File.open(fname, 'w') { |file| file.write(json_str)}
+
+    # Using .to_json
+    # File.open("game_saves/hangman_save.json","w") do |f|
+    #   f.write(obj.to_json)
+    # end
   end
 
   def unserialize
     fname = File.read('game_saves/hangman_save.json')
+    obj = JSON.parse(fname) # parse seems to be preferred/safer
 
-    data = JSON.parse(fname)
-    # data = JSON.load(fname)
+    obj["@secret_word"]
+    instance_variable_set("@secret_word", obj["@secret_word"])
+    # set all instance variables using above
 
     # obj = JSON.parse(file)
     # obj.keys.each do |key|
@@ -85,7 +93,7 @@ class Hangman < WordGame
     @computer = Computer.new
     @wins = 0
     reset_to_new
-    play(@secret_word)
+    play
   end
 
   def reset_to_new
@@ -107,7 +115,7 @@ class Hangman < WordGame
     puts "\n"
   end
 
-  def play(word)
+  def play
     loop do
       show_stats
       show_current_progress(@secret_word)
@@ -144,12 +152,12 @@ class Hangman < WordGame
     puts "Ready for the next game? Enter 'y' to continue."
     gets.chomp
     reset_to_new
-    play(@secret_word)
+    play
   end
 
   def msg_about_turn
     if @guess == 'SAVE'
-      puts 'Game is saving!!'.bg_red
+      puts 'Game is saved!'.bg_red
     else
       if !@guess.nil?
         tally = @secret_word.count { |letter| letter == @guess }
@@ -190,7 +198,6 @@ class Hangman < WordGame
 
     puts "\n    Wins in a row: #{@wins}".gray
     puts "    Guesses left: #{10 - @guesses}      #{"Incorrect letters:".red} #{used_bank.red} \n "\
-
   end
 
   def intro_description
