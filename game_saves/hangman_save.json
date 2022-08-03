@@ -1,1 +1,1 @@
-{"@load":0,"@human":"#<Player:0x00007f1dca0641d8>","@computer":"#<Computer:0x00007f1dca064138>","@wins":1,"@incorrect_letters":[],"@guesses":0,"@guess":"SAVE","@secret_word":["E","A","S","T","E","R"],"@current_progress":["_","_","_","_","_","_"]}
+{"@start_option":1,"@wins":0,"@incorrect_letters":["F"],"@guesses":1,"@guess":"SAVE","@secret_word":["A","C","T","I","V","E"],"@current_progress":["_","_","_","_","_","_"]}

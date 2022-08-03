@@ -2,6 +2,10 @@
 # https://www.theodinproject.com/lessons/ruby-hangman
 # Goal: Create hangman with ability to save and load states
 
+# My notes:
+# yaml/msgpack has no .parse method
+# yaml throws error if you dump then load non-existent classes, json does not
+
 # myvar.methods - Object.instance_methods # to see unique methods
 # utilize private/public methods
 # utilize a module
@@ -25,6 +29,8 @@
 
 require 'pry-byebug'
 require 'json'
+require 'yaml'
+require 'msgpack'
 
 module Swimmable
   def swim
@@ -33,17 +39,25 @@ module Swimmable
 end
 
 module Serializable
+  @@serializer = JSON
+  @@file_type = 'json' if @@serializer == JSON
+
+
   def serialize
     obj = {}
     instance_variables.map do |var|
+      next if var == :@load
+      next if var == :@human
+      next if var == :@computer
+
       obj[var] = instance_variable_get(var)
     end
 
-    json_str = JSON.dump(obj)
+    serial_str = @@serializer.dump(obj)
 
     Dir.mkdir('game_saves') unless Dir.exist?('game_saves')
-    fname = "game_saves/hangman_save.json"
-    File.open(fname, 'w') { |file| file.write(json_str)}
+    fname = "game_saves/hangman_save.#{@@file_type}"
+    File.open(fname, 'w') { |file| file.write(serial_str)}
 
     # Using .to_json
     # File.open("game_saves/hangman_save.json","w") do |f|
@@ -52,17 +66,14 @@ module Serializable
   end
 
   def unserialize
-    fname = File.read('game_saves/hangman_save.json')
-    obj = JSON.parse(fname) # parse seems to be preferred/safer
+    fname = File.read("game_saves/hangman_save.#{@@file_type}")
 
-    obj["@secret_word"]
-    instance_variable_set("@secret_word", obj["@secret_word"])
-    # set all instance variables using above
+    # obj = @@serializer.parse(fname) # parse seems to be preferred for json
+    obj = @@serializer.load(fname)
 
-    # obj = JSON.parse(file)
-    # obj.keys.each do |key|
-    #   instance_variable_set(key, obj[key])
-    # end
+    obj.keys.each do |key|
+      instance_variable_set(key, obj[key])
+    end
   end
 end
 
@@ -79,13 +90,22 @@ class Hangman < WordGame
   def initialize
     intro_description
     ask_load_game
-    # @load = 1
+    # @start_option = 1
 
-    if @load == 1
-      unserialize
-    else
+    if @start_option == 1
       new_game
+    elsif @start_option == 2
+      load_game
     end
+  end
+
+  def load_game
+    @start_option == nil
+    @human = Player.new
+    @computer = Computer.new
+    puts 'Loading game...'.bg_green
+    unserialize
+    play
   end
 
   def new_game
@@ -119,7 +139,7 @@ class Hangman < WordGame
     loop do
       show_stats
       show_current_progress(@secret_word)
-      msg_about_turn
+      msg_about_guess
       guess
 
       if @guess == 'SAVE'
@@ -155,9 +175,9 @@ class Hangman < WordGame
     play
   end
 
-  def msg_about_turn
+  def msg_about_guess
     if @guess == 'SAVE'
-      puts 'Game is saved!'.bg_red
+      puts 'Game is saved!'.bg_green
     else
       if !@guess.nil?
         tally = @secret_word.count { |letter| letter == @guess }
@@ -207,12 +227,22 @@ class Hangman < WordGame
   end
 
   def ask_load_game
-    puts 'Would you like to load your saved game?'
-    input = gets.chomp
-    if input == 'y'
-      @load = 1
-    else
-      @load = 0
+    puts "    1. New game \n"\
+          "    2. Load game \n"\
+          "    3. Quit \n"\
+          "\n"\
+          "Please make a selection: \n"
+
+    input = gets.chomp.to_i
+
+    case input
+    when 1
+      @start_option = 1
+    when 2
+      @start_option = 2
+    when 3
+      puts "Ok, see you later!"
+      exit
     end
   end
 
