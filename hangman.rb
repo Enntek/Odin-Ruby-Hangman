@@ -144,6 +144,8 @@ class Hangman < WordGame
 
       if @guess == 'SAVE'
         serialize
+      elsif @guess == 'QUIT'
+        quit_game
       else
         check_guess(@guess, @secret_word)
       end
@@ -161,6 +163,11 @@ class Hangman < WordGame
     end
 
     next_game
+  end
+
+  def quit_game
+    puts "\nSee you later!\n "
+    exit(true)
   end
 
   def game_over
@@ -190,7 +197,7 @@ class Hangman < WordGame
     begin
       @guess = @human.input_guess.upcase
 
-      raise 'Invalid input' unless (@guess.match(/[a-zA-Z]/) && @guess.length == 1) || @guess =='SAVE'
+      raise 'Invalid input' unless (@guess.match(/[a-zA-Z]/) && @guess.length == 1) || @guess =='SAVE' || @guess == 'QUIT'
     rescue
       puts 'Invalid input, please try again.'.bg_red
       retry
@@ -215,7 +222,9 @@ class Hangman < WordGame
 
   def show_stats
     used_bank = @incorrect_letters.join(' ')
-
+    puts "\n "
+    puts "Tip: Type 'save' or 'quit' at anytime".bg_gray
+    puts "\n "
     puts "\n    Wins in a row: #{@wins}".gray
     puts "    Guesses left: #{10 - @guesses}      #{"Incorrect letters:".red} #{used_bank.red} \n "\
   end
@@ -304,3 +313,4 @@ end
 game = Hangman.new
 
 exit
+
