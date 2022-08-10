@@ -230,9 +230,9 @@ class Hangman < WordGame
   end
 
   def intro_description
-    puts "\nIntro to Hangman goes here!\n"\
-    "This is another line for the intro!\n"\
-    "\n"\
+    puts "\nWelcome to Hangman!".blue
+    puts "You will have 10 tries to guess the secret word!".red
+    puts "You may save your game or quit at any time!\n ".green
   end
 
   def ask_load_game
